@@ -7,6 +7,7 @@ from rest_framework.decorators import api_view,permission_classes
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from django.http import JsonResponse
+from django.core.exceptions import ObjectDoesNotExist
 # Create your views here.
 
 
@@ -29,8 +30,10 @@ def login(request):
     
     serializer= LoginSerializer(data= request.data)
     serializer.is_valid(raise_exception= True)
-    ojuser= Ojuser.objects.get(email= serializer.data['email'])
-    if ojuser is None:
+    try:
+        ojuser= Ojuser.objects.get(email= serializer.data['email'])
+    
+    except ObjectDoesNotExist:
         raise AuthenticationFailed('User not Found! ')
     if not ojuser.check_password(serializer.data['password']):
         raise AuthenticationFailed('Wrong Password !')

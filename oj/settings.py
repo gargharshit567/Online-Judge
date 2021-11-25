@@ -101,7 +101,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'ojdb',
         'USER': 'django',
-        'PASSWORD': 'Django@123',
+        'PASSWORD':  'django-user-password',
         'HOST':'localhost',
         'PORT':'3306',
     }
