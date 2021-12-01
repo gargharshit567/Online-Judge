@@ -18,27 +18,11 @@ class Question(models.Model):
     def get_absolute_url(self):
         return reverse("_detail", kwargs={"pk": self.pk})
 
-class TestCase(models.Model):
-
-    question= models.ForeignKey(Question, on_delete=models.CASCADE)
-    test_input =  models.TextField(max_length=2000)
-    test_output =  models.TextField(max_length=2000)
-
-    class Meta:
-        verbose_name = "testcase"
-
-    def __str__(self):
-        return self.question.code
-
-    def get_absolute_url(self):
-        return reverse("_detail", kwargs={"pk": self.pk})
-
-
 
 class TestCase(models.Model):
     testcase_input = models.TextField(max_length = 1000)
     testcase_output = models.TextField(max_length = 1000)
-    questionId= models.ForeignKey(Question,null = True, on_delete=models.SET_NULL)
+    questionId= models.ForeignKey(Question, on_delete=models.CASCADE)
     def __unicode__(self):
         return self.id
 

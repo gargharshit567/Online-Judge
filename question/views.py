@@ -37,13 +37,9 @@ def getQuestion(request):
 def createQuestion(request):
     serializer= QuestionSerializer(data= request.data)
     serializer.is_valid(raise_exception= True)
-<<<<<<< HEAD
-    ojuser = Ojuser.objects.get(username = request.user.username)
-=======
    # print(request.user.username)
    # print(type(request.user))
    # ojuser = Ojuser.objects.get(username = request.user.username)
->>>>>>> b48633518561a8a19e2c49d49bb5e799a9414e02
     question = Question.objects.create(**serializer.data)
    # question.creator = ojuser
    # question.save()
