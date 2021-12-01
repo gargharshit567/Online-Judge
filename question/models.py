@@ -11,10 +11,7 @@ class Question(models.Model):
     creator = models.ForeignKey(Ojuser,null = True, on_delete=models.SET_NULL)
     submissions = models.IntegerField(default=0)
     editorial = models.TextField(max_length = 9000, default = '')
-
-    class Meta:
-        verbose_name= "question"
-
+    #test_case = models.TextField(max_length = 1000)
     def __str__(self):
         return self.name
 
@@ -36,5 +33,17 @@ class TestCase(models.Model):
     def get_absolute_url(self):
         return reverse("_detail", kwargs={"pk": self.pk})
 
+
+
+class TestCase(models.Model):
+    testcase_input = models.TextField(max_length = 1000)
+    testcase_output = models.TextField(max_length = 1000)
+    questionId= models.ForeignKey(Question,null = True, on_delete=models.SET_NULL)
+    def __unicode__(self):
+        return self.id
+
+    def get_absolute_url(self):
+        return reverse("_detail", kwargs={"pk": self.pk})
+    
 
 

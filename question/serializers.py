@@ -6,8 +6,6 @@ class QuestionSerializer(serializers.ModelSerializer):
         model= Question
         fields= '__all__'
 
-
-class QuestionSerializer(serializers.ModelSerializer):
-    class Meta:
-        model=  TestCase
-        exclude= ('question')
+class FileSerializer(serializers.Serializer):
+    extension = serializers.CharField(max_length= 255, required= True),
+    code = serializers.CharField(max_length= 255, required= True)
