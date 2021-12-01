@@ -4,6 +4,7 @@ from ojuser.models import Ojuser
 
 class Question(models.Model):
     name = models.TextField(max_length = 50)
+    code= models.CharField(max_length=6,unique= True)
     statement = models.TextField(max_length=9000)
     sample_input = models.TextField(max_length=9000)
     explanation = models.TextField(max_length = 9000,null = True)
@@ -11,10 +12,29 @@ class Question(models.Model):
     submissions = models.IntegerField(default=0)
     editorial = models.TextField(max_length = 9000, default = '')
 
+    class Meta:
+        verbose_name= "question"
+
     def __str__(self):
         return self.name
 
     def get_absolute_url(self):
         return reverse("_detail", kwargs={"pk": self.pk})
+
+class TestCase(models.Model):
+
+    question= models.ForeignKey(Question, on_delete=models.CASCADE)
+    test_input =  models.TextField(max_length=2000)
+    test_output =  models.TextField(max_length=2000)
+
+    class Meta:
+        verbose_name = "testcase"
+
+    def __str__(self):
+        return self.question.code
+
+    def get_absolute_url(self):
+        return reverse("_detail", kwargs={"pk": self.pk})
+
 
 

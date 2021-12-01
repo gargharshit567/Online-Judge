@@ -33,8 +33,6 @@ def getQuestion(request):
 def createQuestion(request):
     serializer= QuestionSerializer(data= request.data)
     serializer.is_valid(raise_exception= True)
-    print(request.user.username)
-    print(type(request.user))
     ojuser = Ojuser.objects.get(username = request.user.username)
     question = Question.objects.create(**serializer.data)
     question.creator = request.user
