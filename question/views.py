@@ -151,24 +151,23 @@ def runCppFile(dirOutputs,runFile,outputFile,question):
         myop = open(outputFile, 'w')
         cmd1 = ['cd '+dirOutputs + ' && ./'+runFile]
         try:
-            status1 = subprocess.run(cmd1,timeout=1, shell=True, check=True, stdout=myop, stdin = myip, stderr=subprocess.STDOUT)
+            status1 = subprocess.run(cmd1,timeout=1, shell=True, check=True, stdout=myop, stdin = myip, stderr=subprocess.PIPE)
             myop.close()
             myop = open(outputFile)
             testout = open(case.testcase_output)
-            i =''
-            j =''
-            for l1 in testout:
-                i +=l1
-                print(i)
-            for l2 in myop:
-                j +=l2  
-                print(j)
+            i =myop.readlines()
+            j =testout.readlines()
             if(i!=j):
                 return "WA"
             
     
         except subprocess.TimeoutExpired:
             return "TLE"
+
+        except subprocess.CalledProcessError as e:
+            print(str(e.stderr.decode()))
+            #print(STDOUT)
+            return "Runtime Error"
 
 
     return "AC"

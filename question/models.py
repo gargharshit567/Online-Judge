@@ -22,7 +22,7 @@ class Question(models.Model):
 class TestCase(models.Model):
     testcase_input = models.TextField(max_length = 1000)
     testcase_output = models.TextField(max_length = 1000)
-    questionId= models.ForeignKey(Question, on_delete=models.CASCADE)
+    questionId= models.ForeignKey(Question,null= True, on_delete=models.CASCADE)
     def __unicode__(self):
         return self.id
 
