@@ -1,7 +1,8 @@
 #include <iostream>
 using namespace std;
 int main() {
-	int a[3];
-       a[4]=1;
+	int a,b;
+    cin>>a>>b;
+	cout<<a<<" "<<b;
 	return 0;
 }

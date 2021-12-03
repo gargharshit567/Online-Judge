@@ -49,20 +49,44 @@ def createQuestion(request):
         'data' : question.id
         })
 
+dirame = os.getcwd()
+dirTests = os.path.join(dirame, 'testcase_i_o')
+if os.path.isdir(dirTests) == False:
+    os.mkdir(dirTests)
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def createTestCase(request):
     #serializer
+    try:
+    
+        fin= request.FILES['input']
+        fout= request.FILES['output']
+        question = Question.objects.get(id = request.data['questionId'])
+        cnt= question.test_case_cnt +1 
+        input_file_name=  f'./testcase_i_o/in_{question.code}_{cnt}'
+        output_file_name= f'./testcase_i_o/out_{question.code}_{cnt}'
 
-    print(request.data['testcase'])
-    testCase = TestCase.objects.create(**request.data['testcase'])
-    question = Question.objects.get(id = request.data['questionId'])
-    testCase.questionId = question
-    testCase.save()
+        input_file= open(input_file_name,'w')
+        for f in fin.chunks():
+            input_file.write(f.decode('ascii'))
+
+        output_file= open(output_file_name,'w')
+        for f in fout.chunks():
+            output_file.write(f.decode('ascii'))
+
+        testCase = TestCase.objects.create(testcase_input= input_file_name, testcase_output= output_file_name)
+        testCase.questionId= question
+        testCase.save()
+        question.test_case_cnt= cnt
+        question.save()
+    except Exception as e:
+        print(e)
+    
+    # testCase.questionId = question
+    # testCase.save()
     return JsonResponse({
         'status': 'succeded',
         'code': 200,
-        'data' : testCase.id
     })
     
 
@@ -97,6 +121,7 @@ if os.path.isdir(dirOutputs) == False:
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def compileCppFile(request):
+    
     question = request.data['question']
     filepath = request.data['filepath']
     #jobId = os.path.basename(filepath).split('.')[0] + '.' + 'out'
@@ -107,6 +132,24 @@ def compileCppFile(request):
     cmd = ['g++ ' + filepath + ' -o ' + outPath] #+ ' && cd ' + dirOutputs + ' && ./' + jobId]
     #cmd1 = ['cd ' + dirOutputs + ' && ./' + jobId]
     try:
+
+        flag= False
+        status= subprocess.run("docker ps -aq -f name='^try$'",shell=True, check= True,stdout=subprocess.PIPE, stderr= subprocess.PIPE)
+        #print(status)
+        if(status.stdout):
+            result=  subprocess.run("docker ps -aq -f name='^try$' -f status='running'",shell=True, check= True, stdout=subprocess.PIPE ,stderr= subprocess.PIPE)
+            if not result.stdout:
+                flag=True
+                id=str(status.stdout)[2:-3]
+         #       print(f"docker rm {id}")
+                status=  subprocess.run(f"docker rm {id}",shell=True, check= True, stderr= subprocess.PIPE)
+        else:
+            flag= True
+        
+        if(flag):
+            subprocess.run("docker run -dt --name try ubuntu",shell=True, check= True, stderr= subprocess.PIPE)
+        
+        copyCmd= ['docker cp '+filepath+' try:/compile']
         status = subprocess.run(cmd,timeout=2.1,shell = True,check=True, stderr=subprocess.PIPE)
         print("compiled success")
         print(status)
@@ -126,13 +169,13 @@ def compileCppFile(request):
          'code':200, 
          'data':'TLE timeout'})
     except subprocess.CalledProcessError as e:
-        print('Compilation Error')
+        print('CalledProcessEzception ')
         #print('stderr: {}'.format(e.stderr.decode(sys.getfilesystemencoding())))
         #print('stdout: {}'.format(e.output.decode(sys.getfilesystemencoding())))
         print(str(e.stderr.decode()))
         #print(STDOUT)
-        return JsonResponse({'status':'succeeded', 
-         'code':200, 
+        return JsonResponse({'status':'Failed', 
+         'code':300, 
          'data':format(e.stderr.decode())})
         
          
