@@ -98,17 +98,20 @@ if os.path.isdir(dirCodes) == False:
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
-def createFile(request):
+def submit(request):
     print(request.data['language'])
     language = request.data['language']
-    code = request.data['code']
+    solution = request.data['solution']
+    question = request.data['question']
     print('1')
     jobId = uuid.uuid4().hex
     jobId = jobId + '.' + language
     filepath = os.path.join(dirCodes, jobId)
     f = open(filepath, 'w')
-    f.write(code)
+    f.write(solution)
     print(filepath)
+    ans = compileCppFile(filepath, question,jobId)
+    print(ans)
     return JsonResponse({'status':'succeeded', 
      'code':200, 
      'data':filepath})
@@ -118,18 +121,18 @@ dirOutputs = os.path.join(dirame, 'outputs')
 if os.path.isdir(dirOutputs) == False:
     os.mkdir(dirOutputs)
 
-@api_view(['POST'])
-@permission_classes([AllowAny])
-def compileCppFile(request):
+# @api_view(['POST'])
+# @permission_classes([AllowAny])
+def compileCppFile(filepath, question, jodId):
     
-    question = request.data['question']
-    filepath = request.data['filepath']
+    # question = request.data['question']
+    # filepath = request.data['filepath']
     #jobId = os.path.basename(filepath).split('.')[0] + '.' + 'out'
-    jobId = "a.out"
-    outPath = os.path.join(dirOutputs, jobId)
-    outPutt = os.path.join(dirOutputs, 'o.outp')
+    # jobId = "a.out"
+    # outPath = os.path.join(dirOutputs, jobId)
+    # outPutt = os.path.join(dirOutputs, 'o.outp')
     #myop = open(outPutt, 'w')
-    cmd = ['g++ ' + filepath + ' -o ' + outPath] #+ ' && cd ' + dirOutputs + ' && ./' + jobId]
+    # cmd = ['g++ ' + filepath + ' -o ' + outPath] #+ ' && cd ' + dirOutputs + ' && ./' + jobId]
     #cmd1 = ['cd ' + dirOutputs + ' && ./' + jobId]
     try:
 
@@ -147,40 +150,39 @@ def compileCppFile(request):
             flag= True
         
         if(flag):
-            subprocess.run("docker run -dt --name try ubuntu",shell=True, check= True, stderr= subprocess.PIPE)
+            subprocess.run("docker run -dt --name try ojgcc /bin/bash",shell=True, check= True, stderr= subprocess.PIPE)
         
-        copyCmd= ['docker cp '+filepath+' try:/compile']
-        status = subprocess.run(cmd,timeout=2.1,shell = True,check=True, stderr=subprocess.PIPE)
+        copyCmd= ['docker cp '+filepath+' try:/compilep/maint.cpp']
+        print(copyCmd[0])
+        status = subprocess.run(copyCmd,timeout=2.1,shell = True,executable="/bin/bash",check=True, stderr=subprocess.PIPE)
         print("compiled success")
-        print(status)
-        if status.returncode == 0:
-       # status1 = subprocess.run(cmd1,timeout=2.1, shell=True, check=True, stdout=myop)
-            verdict = runCppFile(dirOutputs, jobId, outPutt, question)
-            return JsonResponse({'status':'succeeded', 
-            'code':200, 
-            'data':verdict})
-        else:
-            return JsonResponse({'status':'succeeded', 
-            'code':200, 
-            'data':'Compilation Error'})
+        return status
+    #     if status.returncode == 0:
+    #    # status1 = subprocess.run(cmd1,timeout=2.1, shell=True, check=True, stdout=myop)
+    #         verdict = runCppFile(dirOutputs, jobId, outPutt, question)
+    #         return JsonResponse({'status':'succeeded', 
+    #         'code':200, 
+    #         'data':verdict})
+    #     else:
+    #         return JsonResponse({'status':'succeeded', 
+    #         'code':200, 
+    #         'data':'Compilation Error'})
     except subprocess.TimeoutExpired:
         print('TLE timeout')
-        return JsonResponse({'status':'succeeded', 
-         'code':200, 
-         'data':'TLE timeout'})
+        return "TLE"
+        # return JsonResponse({'status':'succeeded', 
+        #  'code':200, 
+        #  'data':'TLE timeout'})
     except subprocess.CalledProcessError as e:
-        print('CalledProcessEzception ')
-        #print('stderr: {}'.format(e.stderr.decode(sys.getfilesystemencoding())))
-        #print('stdout: {}'.format(e.output.decode(sys.getfilesystemencoding())))
-        print(str(e.stderr.decode()))
-        #print(STDOUT)
-        return JsonResponse({'status':'Failed', 
-         'code':300, 
-         'data':format(e.stderr.decode())})
-        
-         
-        
-        #status = subprocess
+        return e.stderr.decode()
+    #     print('CalledProcessEzception ')
+    #     #print('stderr: {}'.format(e.stderr.decode(sys.getfilesystemencoding())))
+    #     #print('stdout: {}'.format(e.output.decode(sys.getfilesystemencoding())))
+    #     print(str(e.stderr.decode()))
+    #     #print(STDOUT)
+    #     return JsonResponse({'status':'Failed', 
+    #      'code':300, 
+    #      'data':format(e.stderr.decode())})
 def runCppFile(dirOutputs,runFile,outputFile,question):
     myop = open(outputFile, 'w')
     cmd1 = ['cd ' + dirOutputs + ' && ./' + runFile]
