@@ -1,4 +1,5 @@
 from django.shortcuts import render
+from django.forms.models import model_to_dict   
 from ojuser.models import Ojuser
 from django.contrib.auth.models import User
 from .serializers import QuestionSerializer, FileSerializer
@@ -29,7 +30,7 @@ def getQuestion(request):
     return JsonResponse({
         'status': 'succeded',
         'code': 200,
-        'data': question,
+        'data': model_to_dict( question ),
         })
     
 @api_view(['POST'])
@@ -37,12 +38,7 @@ def getQuestion(request):
 def createQuestion(request):
     serializer= QuestionSerializer(data= request.data)
     serializer.is_valid(raise_exception= True)
-   # print(request.user.username)
-   # print(type(request.user))
-   # ojuser = Ojuser.objects.get(username = request.user.username)
     question = Question.objects.create(**serializer.data)
-   # question.creator = ojuser
-   # question.save()
     return JsonResponse({
         'status': 'succeded',
         'code': 200,
@@ -82,8 +78,6 @@ def createTestCase(request):
     except Exception as e:
         print(e)
     
-    # testCase.questionId = question
-    # testCase.save()
     return JsonResponse({
         'status': 'succeded',
         'code': 200,
@@ -96,6 +90,7 @@ dirCodes = os.path.join(dirame, 'codes')
 if os.path.isdir(dirCodes) == False:
     os.mkdir(dirCodes)
 
+queue=[]
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def submit(request):
@@ -109,31 +104,29 @@ def submit(request):
     filepath = os.path.join(dirCodes, jobId)
     f = open(filepath, 'w')
     f.write(solution)
+    f.close()
+    queue.append(1)
+    loop()
     print(filepath)
     ans = compileCppFile(filepath, question,jobId)
     print(ans)
     return JsonResponse({'status':'succeeded', 
      'code':200, 
-     'data':filepath})
+     'data':ans})
 
 
 dirOutputs = os.path.join(dirame, 'outputs')
 if os.path.isdir(dirOutputs) == False:
     os.mkdir(dirOutputs)
 
-# @api_view(['POST'])
-# @permission_classes([AllowAny])
+def loop():
+    while(queue):
+        ans= queue.pop(0)
+        print(ans)
+        
+
 def compileCppFile(filepath, question, jodId):
     
-    # question = request.data['question']
-    # filepath = request.data['filepath']
-    #jobId = os.path.basename(filepath).split('.')[0] + '.' + 'out'
-    # jobId = "a.out"
-    # outPath = os.path.join(dirOutputs, jobId)
-    # outPutt = os.path.join(dirOutputs, 'o.outp')
-    #myop = open(outPutt, 'w')
-    # cmd = ['g++ ' + filepath + ' -o ' + outPath] #+ ' && cd ' + dirOutputs + ' && ./' + jobId]
-    #cmd1 = ['cd ' + dirOutputs + ' && ./' + jobId]
     try:
 
         flag= False
@@ -144,7 +137,7 @@ def compileCppFile(filepath, question, jodId):
             if not result.stdout:
                 flag=True
                 id=str(status.stdout)[2:-3]
-         #       print(f"docker rm {id}")
+
                 status=  subprocess.run(f"docker rm {id}",shell=True, check= True, stderr= subprocess.PIPE)
         else:
             flag= True
@@ -152,51 +145,20 @@ def compileCppFile(filepath, question, jodId):
         if(flag):
             subprocess.run("docker run -dt --name try ojgcc /bin/bash",shell=True, check= True, stderr= subprocess.PIPE)
         
-        copyCmd= ['docker cp '+filepath+' try:/compilep/maint.cpp']
-        print(copyCmd[0])
-        status = subprocess.run(copyCmd,timeout=2.1,shell = True,executable="/bin/bash",check=True, stderr=subprocess.PIPE)
+        copyCmd= ['docker cp '+filepath+' try:/compile/main.cpp']
+        status = subprocess.run(copyCmd,shell = True,executable="/bin/bash",check=True, stderr=subprocess.PIPE)
+        status= subprocess.run('docker exec -w /compile try g++ -o a.out main.cpp',timeout=2.1,shell = True,executable="/bin/bash",check=True, stderr=subprocess.PIPE)
         print("compiled success")
-        return status
-    #     if status.returncode == 0:
-    #    # status1 = subprocess.run(cmd1,timeout=2.1, shell=True, check=True, stdout=myop)
-    #         verdict = runCppFile(dirOutputs, jobId, outPutt, question)
-    #         return JsonResponse({'status':'succeeded', 
-    #         'code':200, 
-    #         'data':verdict})
-    #     else:
-    #         return JsonResponse({'status':'succeeded', 
-    #         'code':200, 
-    #         'data':'Compilation Error'})
-    except subprocess.TimeoutExpired:
-        print('TLE timeout')
-        return "TLE"
-        # return JsonResponse({'status':'succeeded', 
-        #  'code':200, 
-        #  'data':'TLE timeout'})
-    except subprocess.CalledProcessError as e:
-        return e.stderr.decode()
-    #     print('CalledProcessEzception ')
-    #     #print('stderr: {}'.format(e.stderr.decode(sys.getfilesystemencoding())))
-    #     #print('stdout: {}'.format(e.output.decode(sys.getfilesystemencoding())))
-    #     print(str(e.stderr.decode()))
-    #     #print(STDOUT)
-    #     return JsonResponse({'status':'Failed', 
-    #      'code':300, 
-    #      'data':format(e.stderr.decode())})
-def runCppFile(dirOutputs,runFile,outputFile,question):
-    myop = open(outputFile, 'w')
-    cmd1 = ['cd ' + dirOutputs + ' && ./' + runFile]
-    testcase = TestCase.objects.filter(questionId =  question)
-    #testcase1 = TestCase.objects.get(questionId =  question)
-    print(testcase)
-    for case in testcase:
-        print(case)
-        myip = open(case.testcase_input)
 
-        myop = open(outputFile, 'w')
-        cmd1 = ['cd '+dirOutputs + ' && ./'+runFile]
-        try:
-            status1 = subprocess.run(cmd1,timeout=1, shell=True, check=True, stdout=myop, stdin = myip, stderr=subprocess.PIPE)
+        testcase = TestCase.objects.filter(questionId =  question)
+        outputFile= './outputs/out.txt'
+        for case in testcase:
+            print(case)
+
+            myin= open(case.testcase_input)
+            myop = open(outputFile, 'w')
+            
+            status1 = subprocess.run("docker exec -i -w /compile try ./a.out",timeout=1, shell=True, check=True,stdin= myin, stdout=myop, stderr=subprocess.PIPE)
             myop.close()
             myop = open(outputFile)
             testout = open(case.testcase_output)
@@ -204,16 +166,11 @@ def runCppFile(dirOutputs,runFile,outputFile,question):
             j =testout.readlines()
             if(i!=j):
                 return "WA"
-            
-    
-        except subprocess.TimeoutExpired:
-            return "TLE"
+        return "AC"
 
-        except subprocess.CalledProcessError as e:
-            print(str(e.stderr.decode()))
-            #print(STDOUT)
-            return "Runtime Error"
+    except subprocess.TimeoutExpired:
+        print('TLE timeout')
+        return "TLE"
 
-
-    return "AC"
-
+    except subprocess.CalledProcessError as e:
+        return e.stderr.decode()

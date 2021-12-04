@@ -1,9 +1,8 @@
 from django.urls import path
-from .views import createQuestion,getQuestion,submit,runCppFile,compileCppFile, createTestCase
+from . import views
 urlpatterns = [
-    path('create', createQuestion),
-    path('get', getQuestion),
-    path('createFile', submit),
-    path('compileCpp', compileCppFile),
-    path('createTestCase', createTestCase)
+    path('create', views.createQuestion),
+    path('get', views.getQuestion),
+    path('createFile', views.submit),
+    path('createTestCase', views.createTestCase)
 ]
